@@ -147,12 +147,7 @@ function render(useFineLocation) {
   elements.casesError.style.display = 'none';
   const loading = 'Loading...';
   elements.yourLocation.textContent = loading;
-  elements.closestLocation.textContent = loading;
-  elements.distance.textContent = loading;
-  elements.confirmed.textContent = loading;
-  elements.deaths.textContent = loading;
-  elements.recovered.textContent = loading;
-  elements.updated.textContent = loading;  
+  setAllCaseInfo(loading);
   Promise.all([
     getData(),
     getLocation(useFineLocation),

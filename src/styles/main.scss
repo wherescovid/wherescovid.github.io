@@ -85,6 +85,19 @@ footer {
   margin: 2rem;
 }
 
+.more-info {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 100%;
+}
+
+ul {
+  text-align: left;
+  display: inline-block;
+}
+
 .max-width {
   max-width: 350px;
   margin: 0 auto;
@@ -124,4 +137,11 @@ a.button:hover {
     display: block;
     margin: 0.4em auto;
   }
+}
+
+.error {
+  color: #EE6352;
+  font-size: 2vw;
+  max-width: 350px;
+  margin: 0.5rem;
 }

@@ -21,6 +21,7 @@ const elements = {
   lastDataRequest: document.querySelector('#lastDataRequest'),
   locationError: document.querySelector('#locationError'),
   casesError: document.querySelector('#casesError'),
+  active: document.querySelector('#active'),
 };
 
 function getData() {
@@ -40,7 +41,10 @@ function getData() {
 }
 
 function getDistances([features, location]) {
-  const distances = features.map(({ attributes }) => {
+  const distances = features
+    .filter(({ attributes }) => (attributes.Confirmed - attributes.Recovered) > 0)
+    .map(({ attributes }) => {
+    attributes.Active = attributes.Confirmed - attributes.Recovered;
     attributes.distance_kms = getDistance(location.latitude, location.longitude, attributes.Lat, attributes.Long_);
     attributes.distance_miles = attributes.distance_kms * 0.6213712;
     return attributes;
@@ -101,6 +105,7 @@ function setAllCaseInfo(value) {
   elements.confirmed.textContent = value;
   elements.deaths.textContent = value;
   elements.recovered.textContent = value;
+  elements.active.textContent = value;
   elements.updated.textContent = 'Never';
   elements.lastDataRequest.textContent = 'Never';
 }
@@ -129,6 +134,7 @@ function showInfo({ location, closest }) {
       elements.closestLocation.textContent = [closest.Province_State, closest.Country_Region].filter(i => i).join(', ');
       elements.distance.textContent = `${closest.distance_miles.toFixed(1)} miles`;
       elements.confirmed.textContent = closest.Confirmed;
+      elements.active.textContent = closest.Active;
       elements.deaths.textContent = closest.Deaths;
       elements.recovered.textContent = closest.Recovered;
       elements.updated.textContent = new Date(closest.Last_Update).toLocaleString();  

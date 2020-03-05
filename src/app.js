@@ -42,9 +42,9 @@ function getData() {
 
 function getDistances([features, location]) {
   const distances = features
-    .filter(({ attributes }) => (attributes.Confirmed - attributes.Recovered) > 0)
+    .filter(({ attributes }) => (attributes.Confirmed - attributes.Recovered - attributes.Deaths) > 0)
     .map(({ attributes }) => {
-    attributes.Active = attributes.Confirmed - attributes.Recovered;
+    attributes.Active = attributes.Confirmed - attributes.Recovered - attributes.Deaths;
     attributes.distance_kms = getDistance(location.latitude, location.longitude, attributes.Lat, attributes.Long_);
     attributes.distance_miles = attributes.distance_kms * 0.6213712;
     return attributes;

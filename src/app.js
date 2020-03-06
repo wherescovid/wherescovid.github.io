@@ -1,7 +1,7 @@
 const url = 'https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/ncov_cases/FeatureServer/1/query?f=json&where=Confirmed%20%3E%200&returnGeometry=false&spatialRel=esriSpatialRelIntersects&outFields=*&orderByFields=Confirmed%20desc%2CCountry_Region%20asc%2CProvince_State%20asc&resultOffset=0&resultRecordCount=1000&cacheHint=false';
 const maxDiffMs = 1000 * 60 * 60;
 
-const version = '1.1.0';
+const version = '1.2.0';
 
 if (localStorage.version !== version) {
   localStorage.clear();
@@ -80,13 +80,39 @@ function getIPLocation() {
     });
 }
 
+function getLocationFromCoords(coords) {
+  const lookup = `${coords.latitude}, ${coords.longitude}`;
+  if (localStorage[lookup]) return Promise.resolve(JSON.parse(localStorage[lookup]));
+  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}`;
+  return fetch(url)
+    .then(res => res.json())
+    .then(json => {
+      const location = {
+        city: json.address.city,
+        region_code: json.address.state,
+        country: json.address.country_code.toUpperCase(),
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      };
+      localStorage[lookup] = JSON.stringify(location);
+      return location;
+    })
+    .catch(() => ({
+      city: location,
+      region_code: '',
+      country: '',
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+    }))
+}
+
 function getLocation(useFineLocation) {
   if (localStorage.useFineLocation === 'true' || useFineLocation) {
     return new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition((location) => {
         localStorage.useFineLocation = true;
         elements.locationButton.style.display = 'none';
-        resolve(location.coords);
+        resolve(getLocationFromCoords(location.coords));
       }, () => {
         localStorage.useFineLocation = false;
         elements.locationButton.style.display = '';
@@ -117,19 +143,11 @@ function showInfo({ location, closest }) {
     elements.yourLocation.textContent = unknown;
     setAllCaseInfo(unknown);
   } else if (!closest) {
-    if (localStorage.useFineLocation === 'true') {
-      elements.yourLocation.textContent = [location.latitude.toFixed(4), location.longitude.toFixed(4)].join(', ');
-    } else {
-      elements.yourLocation.textContent = [location.city, location.region_code, location.country].join(', ');
-    }
+    elements.yourLocation.textContent = [location.city, location.region_code, location.country].filter(i => i).join(', ');
     setAllCaseInfo(unknown);
     elements.casesError.style.display = '';
   } else {
-    if (localStorage.useFineLocation === 'true') {
-      elements.yourLocation.textContent = [location.latitude.toFixed(4), location.longitude.toFixed(4)].join(', ');
-    } else {
-      elements.yourLocation.textContent = [location.city, location.region_code, location.country].join(', ');
-    }
+    elements.yourLocation.textContent = [location.city, location.region_code, location.country].filter(i => i).join(', ');
     setTimeout(() => {
       elements.closestLocation.textContent = [closest.Province_State, closest.Country_Region].filter(i => i).join(', ');
       elements.distance.textContent = `${closest.distance_miles.toFixed(1)} miles`;

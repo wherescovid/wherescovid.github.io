@@ -12,7 +12,7 @@ View the live website here: [https://wherescovid.github.io](https://wherescovid.
 
 ## References
 
-* Rough location provided by: [https://ipapi.co](https://ipapi.co)
+* Rough location provided by: [https://ipapi.co](https://ipapi.co) and [Nominatim](https://nominatim.openstreetmap.org/)
 * COVID-19 Data provided by: [Johns Hopkins CSSE](https://gisanddata.maps.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6)
 * Precise location provided by the browser geolocation API: [Geolocation.getCurrentPosition()](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/getCurrentPosition)
 

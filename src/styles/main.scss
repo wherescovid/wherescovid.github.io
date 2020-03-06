@@ -56,7 +56,7 @@ h1 {
 }
 
 .small {
-  font-size: 1vw;
+  font-size: max(1vw, 10px);
 }
 
 #your-location {
@@ -124,7 +124,7 @@ a.button {
   text-align: center;
   transition: all 0.2s;
   cursor: pointer;
-  font-size: 2vw;
+  font-size: max(2vw, 18px);
 }
 
 a.button:hover {
@@ -141,9 +141,10 @@ a.button:hover {
 
 .error {
   color: #EE6352;
-  font-size: 2vw;
+  font-size: max(2vw, 18px);
   max-width: 350px;
   margin: 0.5rem;
+  text-align: center;
 }
 
 .note {

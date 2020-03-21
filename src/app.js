@@ -1,4 +1,4 @@
-const nytUrl = 'https://static01.nyt.com/newsgraphics/2020/01/21/china-coronavirus/f1b88bb0f0745ff1d26ab3235b7f2d99e56c11a3/build/js/chunks/model-lite.js';
+const nytUrl = 'https://static01.nyt.com/newsgraphics/2020/01/21/china-coronavirus/7b4a9f90f96ba3ddb41563ff8b399a89efaf231d/build/js/chunks/model-lite.js';
 const maxDiffMs = 1000 * 60 * 60;
 
 const version = '1.2.0';

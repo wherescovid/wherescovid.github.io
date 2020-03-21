@@ -1,4 +1,4 @@
-const url = 'https://services1.arcgis.com/0MSEUqKaxRlEPj5g/arcgis/rest/services/ncov_cases/FeatureServer/1/query?f=json&where=Confirmed%20%3E%200&returnGeometry=false&spatialRel=esriSpatialRelIntersects&outFields=*&orderByFields=Confirmed%20desc%2CCountry_Region%20asc%2CProvince_State%20asc&resultOffset=0&resultRecordCount=1000&cacheHint=false';
+const nytUrl = 'https://static01.nyt.com/newsgraphics/2020/01/21/china-coronavirus/f1b88bb0f0745ff1d26ab3235b7f2d99e56c11a3/build/js/chunks/model-lite.js';
 const maxDiffMs = 1000 * 60 * 60;
 
 const version = '1.2.0';
@@ -10,49 +10,125 @@ if (localStorage.version !== version) {
 
 const elements = {
   yourLocation: document.querySelector('#your-location'),
-  closestLocation: document.querySelector('#closest-location'),
-  distance: document.querySelector("#distance"),
   confirmed: document.querySelector("#confirmed"),
   deaths: document.querySelector("#deaths"),
-  recovered: document.querySelector("#recovered"),
-  updated: document.querySelector('#updated'),
   locationButton: document.querySelector('#locationButton'),
   refreshButton: document.querySelector('#refreshButton'),
   lastDataRequest: document.querySelector('#lastDataRequest'),
   locationError: document.querySelector('#locationError'),
   casesError: document.querySelector('#casesError'),
   active: document.querySelector('#active'),
+  distanceSelect: document.querySelector('#distanceSelect'),
+  locationTableBody: document.querySelector('tbody'),
 };
 
 function getData() {
   const cacheDiff = Date.now() - localStorage.cacheTime;
-  elements.lastDataRequest.textContent = new Date(+localStorage.cacheTime).toLocaleString();
-  if (localStorage.cacheTime && cacheDiff < maxDiffMs && localStorage.cacheData) return Promise.resolve(JSON.parse(localStorage.cacheData));
-  return fetch(url)
-    .then(response => response.json())
-    .then(json => {
-      localStorage.cacheData = JSON.stringify(json.features);
+  elements.lastDataRequest.textContent = new Date(+localStorage.cacheTime || Date.now()).toLocaleString();
+  if (localStorage.cacheTime && cacheDiff < maxDiffMs && localStorage.nytData) return Promise.resolve(JSON.parse(localStorage.nytData));
+  return fetch(nytUrl)
+    .then(response => response.text())
+    .then(js => {
+      js = js.replace(/export {(.*)/, '');
+      eval(js);
+      const data = {
+        countries,
+        us_cases,
+        us_counties,
+      };
+      const cases = {};
+      cases.us_cases = data.us_counties.map(({
+        county_id: id,
+        confirmed,
+        deaths,
+        lat: latitude,
+        lon: longitude,
+        county,
+        postal
+      }) => ({
+        id,
+        confirmed,
+        deaths,
+        latitude,
+        longitude,
+        name: `${county} ${postal === 'LA' ? 'Parish' : postal === 'AK' ? 'Borough' : 'County'}, ${postal}`
+      }));
+      cases.world_cases = data.countries.map(({
+        nyt_id: id,
+        unique: name,
+        confirmed,
+        deaths,
+        lat: latitude,
+        lon: longitude,
+      }) => ({
+        id,
+        confirmed,
+        deaths,
+        latitude,
+        longitude,
+        name,
+      }))
       localStorage.cacheTime = Date.now();
-      elements.lastDataRequest.textContent = new Date(+localStorage.cacheTime).toLocaleString();
-      return json.features;
-    }).catch(() => {
-      return [];
+      localStorage.nytData = JSON.stringify(cases);
+      return cases;
     });
 }
 
-function getDistances([features, location]) {
-  const distances = features
-    .filter(({ attributes }) => (attributes.Confirmed - attributes.Recovered - attributes.Deaths) > 0)
-    .map(({ attributes }) => {
-    attributes.Active = attributes.Confirmed - attributes.Recovered - attributes.Deaths;
-    attributes.distance_kms = getDistance(location.latitude, location.longitude, attributes.Lat, attributes.Long_);
-    attributes.distance_miles = attributes.distance_kms * 0.6213712;
-    return attributes;
+let firstRun = true;
+function getDistances([locations, location]) {
+  const items = locations.us_cases.concat(locations.world_cases.filter(item => item.name !== 'US'));
+  const distances = items
+    .map((item) => {
+    item.distance_kms = getDistance(location.latitude, location.longitude, item.latitude, item.longitude);
+    item.distance_miles = item.distance_kms * 0.6213712;
+    const row = document.createElement('tr');
+    const classNames = {
+      distance_miles: 'blue',
+      name: 'purple',
+      confirmed: 'yellow',
+      deaths: 'red',
+    };
+    ['distance_miles', 'name', 'confirmed', 'deaths']
+      .forEach(prop => {
+        const column = document.createElement('td');
+        if (prop === 'distance_miles') {
+          column.textContent = item[prop].toFixed(1);
+        } else if (prop === 'Last_Update') {
+          column.textContent = new Date(item[prop]).toLocaleString();
+        } else {
+          column.textContent = item[prop];
+        }
+        column.classList.add(classNames[prop]);
+        row.appendChild(column);
+      });
+    item.element = row;
+    return item;
   });
   distances.sort((a, b) => a.distance_kms - b.distance_kms);
+  if (firstRun) {
+    elements.distanceSelect.value = 500;
+    firstRun = false;
+  }
+  const maxDistance = +elements.distanceSelect.value;
+  const total = distances.reduce((total, item) => {
+    if (item.distance_miles < maxDistance) {
+      Object.keys(total).forEach(prop => {
+        if (prop === 'locations') return;
+        total[prop] += item[prop];
+      });
+      total.locations.push(item);
+    }
+    return total;
+  }, {
+    confirmed: 0,
+    deaths: 0,
+    locations: []
+  });
+  total.distance_miles = maxDistance;
+
   return {
     location,
-    closest: distances[0],
+    closest: total // distances[0],
   };
 }
 
@@ -88,8 +164,9 @@ function getLocationFromCoords(coords) {
     .then(res => res.json())
     .then(json => {
       const location = {
-        city: json.address.city,
+        city: json.address.city || json.address.village,
         region_code: json.address.state,
+        county: json.address.county,
         country: json.address.country_code.toUpperCase(),
         latitude: coords.latitude,
         longitude: coords.longitude,
@@ -126,13 +203,8 @@ function getLocation(useFineLocation) {
 }
 
 function setAllCaseInfo(value) {
-  elements.closestLocation.textContent = value;
-  elements.distance.textContent = value;
   elements.confirmed.textContent = value;
   elements.deaths.textContent = value;
-  elements.recovered.textContent = value;
-  elements.active.textContent = value;
-  elements.updated.textContent = 'Never';
   elements.lastDataRequest.textContent = 'Never';
 }
 
@@ -147,25 +219,24 @@ function showInfo({ location, closest }) {
     setAllCaseInfo(unknown);
     elements.casesError.style.display = '';
   } else {
-    elements.yourLocation.textContent = [location.city, location.region_code, location.country].filter(i => i).join(', ');
-    setTimeout(() => {
-      elements.closestLocation.textContent = [closest.Province_State, closest.Country_Region].filter(i => i).join(', ');
-      elements.distance.textContent = `${closest.distance_miles.toFixed(1)} miles`;
-      elements.confirmed.textContent = closest.Confirmed;
-      elements.active.textContent = closest.Active;
-      elements.deaths.textContent = closest.Deaths;
-      elements.recovered.textContent = closest.Recovered;
-      elements.updated.textContent = new Date(closest.Last_Update).toLocaleString();  
-    }, 500);
+    if (location.country === 'US') {
+      elements.yourLocation.textContent = [location.county || location.city, location.region_code].filter(i => i).join(', ');
+    } else {
+      elements.yourLocation.textContent = [location.city, location.region_code, location.country].filter(i => i).join(', ');
+    }
+    elements.locationTableBody.innerHTML = '';
+    closest
+      .locations.forEach(location => {
+        elements.locationTableBody.appendChild(location.element);
+      });
+    elements.confirmed.textContent = closest.confirmed;
+    elements.deaths.textContent = closest.deaths;
   }
 }
 
 function render(useFineLocation) {
   elements.locationError.style.display = 'none';
   elements.casesError.style.display = 'none';
-  const loading = 'Loading...';
-  elements.yourLocation.textContent = loading;
-  setAllCaseInfo(loading);
   Promise.all([
     getData(),
     getLocation(useFineLocation),
@@ -186,5 +257,9 @@ elements.locationButton.addEventListener('click', () => {
 elements.refreshButton.addEventListener('click', () => {
   delete localStorage.cacheData;
   delete localStorage.cacheTime;
+  render();
+});
+
+elements.distanceSelect.addEventListener('input', (event) => {
   render();
 });

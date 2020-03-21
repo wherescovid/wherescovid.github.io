@@ -29,7 +29,7 @@ h1 {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin: 3rem 0;
+  margin: 1.5rem 0;
 }
 
 .info-item {
@@ -68,15 +68,23 @@ h1 {
   color: #73FBD3;
 }
 
-#deaths {
+.blue {
+  color: #73FBD3,
+}
+
+.purple {
+  color: #A06CD5;
+}
+
+.red {
   color: #EE6352;
 }
 
-#confirmed, #active {
+.yellow {
   color: #EEC643;
 }
 
-#recovered {
+.green {
   color: #29BF12;
 }
 
@@ -107,7 +115,7 @@ a {
   color: #279AF1;
 }
 
-a.button {
+a.button, select {
   display: inline-block;
   padding: 0.35em 1.2em;
   border: 0.1em solid #FFFFFF;
@@ -127,15 +135,30 @@ a.button {
   font-size: max(2vw, 18px);
 }
 
+select {
+  background: black;
+  font-size: max(3vw, 18px);
+  text-align: right;
+  width: 25vw;
+  padding: 0.1rem;
+}
+
 a.button:hover {
   color: #000000;
   background-color: #FFFFFF;
 }
 
-@media all and (max-width:30em) {
+@media all and (max-width:500px) {
   a.button {
     display: block;
     margin: 0.4em auto;
+  }
+  select {
+    width: 40vw;
+    padding: 0.1rem;
+  }
+  table {
+    margin: 0.25em;
   }
 }
 
@@ -150,4 +173,45 @@ a.button:hover {
 .note {
   max-width: 350px;
   margin: 0.5rem 0;
+}
+
+.range {
+  width: 100%;
+  max-width: 350px;
+  cursor: pointer;
+}
+
+table {
+  border: 0.1em solid #FFFFFF;
+  border-collapse: collapse;
+  margin: 1em;
+  border-radius: 0.12em;
+  box-sizing: border-box;
+  transition: all 0.2s;
+  font-size: max(1.8vw, 16px);
+}
+
+th, td {
+  border: 0.1em solid #FFFFFF;
+}
+td {
+  padding: 0.35rem;
+}
+thead,
+tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+tbody {
+  td {
+    text-align: right;
+  }
+  max-height: 37vh;
+  display: block;
+  overflow-y: scroll;
+}
+
+.right {
+  text-align: right;
 }

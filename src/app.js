@@ -1,4 +1,4 @@
-const nytUrl = 'https://static01.nyt.com/newsgraphics/2020/01/21/china-coronavirus/649f80dd4d4ffd74423b7cb977fdc740f4cb9193/build/js/chunks/model-lite.js';
+const nytPageUrl = 'http://cors-anywhere.herokuapp.com/https://www.nytimes.com/interactive/2020/us/coronavirus-us-cases.html';
 const maxDiffMs = 1000 * 60 * 60;
 
 const version = '1.2.0';
@@ -26,51 +26,61 @@ function getData() {
   const cacheDiff = Date.now() - localStorage.cacheTime;
   elements.lastDataRequest.textContent = new Date(+localStorage.cacheTime || Date.now()).toLocaleString();
   if (localStorage.cacheTime && cacheDiff < maxDiffMs && localStorage.nytData) return Promise.resolve(JSON.parse(localStorage.nytData));
-  return fetch(nytUrl)
+  return fetch(nytPageUrl)
     .then(response => response.text())
-    .then(js => {
-      js = js.replace(/export {(.*)/, '');
-      eval(js);
-      const data = {
-        countries,
-        us_cases,
-        us_counties,
-      };
-      const cases = {};
-      cases.us_cases = data.us_counties.map(({
-        county_id: id,
-        confirmed,
-        deaths,
-        lat: latitude,
-        lon: longitude,
-        county,
-        postal
-      }) => ({
-        id,
-        confirmed,
-        deaths,
-        latitude,
-        longitude,
-        name: `${county} ${postal === 'LA' ? 'Parish' : postal === 'AK' ? 'Borough' : 'County'}, ${postal}`
-      }));
-      cases.world_cases = data.countries.map(({
-        nyt_id: id,
-        unique: name,
-        confirmed,
-        deaths,
-        lat: latitude,
-        lon: longitude,
-      }) => ({
-        id,
-        confirmed,
-        deaths,
-        latitude,
-        longitude,
-        name,
-      }))
-      localStorage.cacheTime = Date.now();
-      localStorage.nytData = JSON.stringify(cases);
-      return cases;
+    .then(html => {
+      const page = document.createElement('div');
+      page.innerHTML = html;
+      const link = page.querySelector('link[rel="preload"]');
+      const baseUrl = link.getAttribute('href').match(/https\:\/\/static01\.nyt\.com\/newsgraphics\/2020\/01\/21\/china-coronavirus\/(.*)\/build\/js\/main\.js/);
+      const buildId = baseUrl[1];
+      const url = `https://static01.nyt.com/newsgraphics/2020/01/21/china-coronavirus/${buildId}/build/js/chunks/model-lite.js`;
+      return fetch(url)
+      .then(response => response.text())
+      .then(js => {
+        js = js.replace(/export {(.*)/, '');
+        eval(js);
+        const data = {
+          countries,
+          us_cases,
+          us_counties,
+        };
+        const cases = {};
+        cases.us_cases = data.us_counties.map(({
+          county_id: id,
+          confirmed,
+          deaths,
+          lat: latitude,
+          lon: longitude,
+          county,
+          postal
+        }) => ({
+          id,
+          confirmed,
+          deaths,
+          latitude,
+          longitude,
+          name: `${county} ${postal === 'LA' ? 'Parish' : postal === 'AK' ? 'Borough' : 'County'}, ${postal}`
+        }));
+        cases.world_cases = data.countries.map(({
+          nyt_id: id,
+          unique: name,
+          confirmed,
+          deaths,
+          lat: latitude,
+          lon: longitude,
+        }) => ({
+          id,
+          confirmed,
+          deaths,
+          latitude,
+          longitude,
+          name,
+        }))
+        localStorage.cacheTime = Date.now();
+        localStorage.nytData = JSON.stringify(cases);
+        return cases;
+      });
     });
 }
 

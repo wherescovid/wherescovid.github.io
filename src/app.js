@@ -1,4 +1,4 @@
-const nytPageUrl = 'http://cors-anywhere.herokuapp.com/https://www.nytimes.com/interactive/2020/us/coronavirus-us-cases.html';
+const nytPageUrl = 'https://cors-anywhere.herokuapp.com/https://www.nytimes.com/interactive/2020/us/coronavirus-us-cases.html';
 const maxDiffMs = 1000 * 60 * 60;
 
 const version = '1.2.0';

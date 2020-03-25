@@ -41,9 +41,8 @@ function getData() {
         js = js.replace(/export {(.*)/, '');
         eval(js);
         const data = {
-          countries,
-          us_cases,
           us_counties,
+          countries_raw,
         };
         const cases = {};
         cases.us_cases = data.us_counties.map(({
@@ -52,7 +51,7 @@ function getData() {
           deaths,
           lat: latitude,
           lon: longitude,
-          county,
+          subregion,
           postal
         }) => ({
           id,
@@ -60,9 +59,9 @@ function getData() {
           deaths,
           latitude,
           longitude,
-          name: `${county} ${postal === 'LA' ? 'Parish' : postal === 'AK' ? 'Borough' : 'County'}, ${postal}`
+          name: `${subregion} ${postal === 'LA' ? 'Parish' : postal === 'AK' ? 'Borough' : 'County'}, ${postal}`
         }));
-        cases.world_cases = data.countries.map(({
+        cases.world_cases = data.countries_raw.map(({
           nyt_id: id,
           unique: name,
           confirmed,
